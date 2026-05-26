@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../server/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum TaskType {
+  LECTURE
+  QUESTION
+  SINGLE_CHOICE
+  MULTI_CHOICE
+  CODE
+  MARKUP
+}
+
+enum ProgressStatus {
+  SUCCESS
+  FAILED
+}
+
+model User {
+  id             Int              @id @default(autoincrement())
+  name           String
+  login          String           @unique
+  email          String           @unique
+  passwordHash   String?
+  role           UserRole         @default(USER)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  sessions       Session[]
+  comments       Comment[]
+  taskProgress   TaskProgress[]
+  lessonProgress LessonProgress[]
+  themeProgress  ThemeProgress[]
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  tokenHash String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Course {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  sortIndex   Int      @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  themes      Theme[]
+}
+
+model Theme {
+  id          Int             @id @default(autoincrement())
+  courseId    Int
+  course      Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  index       Int
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  lessons     Lesson[]
+  progress    ThemeProgress[]
+
+  @@unique([courseId, index])
+  @@index([courseId])
+}
+
+model Lesson {
+  id          Int              @id @default(autoincrement())
+  themeId     Int
+  theme       Theme            @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  index       Int
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  tasks       Task[]
+  progress    LessonProgress[]
+
+  @@unique([themeId, index])
+  @@index([themeId])
+}
+
+model Task {
+  id        Int            @id @default(autoincrement())
+  lessonId  Int
+  lesson    Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  type      TaskType
+  title     String
+  content   Json
+  sortIndex Int
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  comments  Comment[]
+  progress  TaskProgress[]
+
+  @@unique([lessonId, sortIndex])
+  @@index([lessonId])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+}
+
+model TaskProgress {
+  id        Int            @id @default(autoincrement())
+  userId    Int
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId    Int
+  task      Task           @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  status    ProgressStatus
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([userId, taskId])
+}
+
+model LessonProgress {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  Int
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, lessonId])
+}
+
+model ThemeProgress {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  themeId   Int
+  theme     Theme    @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, themeId])
+}

@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: skufschool-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: skuf
+      POSTGRES_PASSWORD: skuf
+      POSTGRES_DB: skufschool
+    ports:
+      - "5432:5432"
+    volumes:
+      - skufschool_pg:/var/lib/postgresql/data
+volumes:
+  skufschool_pg:
